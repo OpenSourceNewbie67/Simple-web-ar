@@ -5,52 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Hiro AR 小星球</title>
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      overflow: hidden;
-      background: #000;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
-    #loading {
-      position: fixed;
-      inset: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: #000;
-      color: #fff;
-      text-align: center;
-      font-size: 15px;
-      line-height: 1.6;
-    }
-    #hud {
-      position: fixed;
-      left: 12px;
-      right: 12px;
-      bottom: 12px;
-      z-index: 10;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(0, 0, 0, .55);
-      color: #fff;
-      font-size: 14px;
-      line-height: 1.55;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-    #hud a {
-      color: #7dd3fc;
-    }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; }
+    #loading { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 24px; background: #000; color: #fff; text-align: center; font-size: 15px; line-height: 1.6; }
+    #hud { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 10; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 14px; line-height: 1.55; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    #hud a { color: #7dd3fc; }
   </style>
 
   <!-- A-Frame + AR.js -->
-  <!-- 使用 A-Frame 1.5.0，兼容性更广 -->
-<script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe-master.min.js"></script>
-<!-- 使用 AR.js v3.4.0 的固定版本，避免 master 分支的不确定性 -->
-<script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.0/aframe/build/aframe-ar.js"></script>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <!-- 注意：此处恢复了 raw.githack.com 链接，这是部分解决方案推荐的配置 -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
   <div id="loading">
@@ -60,106 +24,66 @@
 
   <div id="hud">
     把摄像头对准 <b>Hiro 标记</b>，出现小星球后点屏幕可换颜色。<br>
-    <a href="https://ar-js-org.github.io/AR.js/data/images/hiro.png" target="_blank" rel="noopener">
-      打开 Hiro 标记图
-    </a>
-    （需要另一块屏幕显示或打印）
+    <a href="https://ar-js-org.github.io/AR.js/data/images/hiro.png" target="_blank" rel="noopener">打开 Hiro 标记图</a>（需要另一块屏幕显示或打印）
   </div>
 
-  <a-scene
-    embedded
-    arjs="sourceType: webcam; debugUIEnabled: false;"
-    vr-mode-ui="enabled: false"
-    renderer="antialias: true; alpha: true"
->
-    <a-marker preset="hiro">
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false" renderer="antialias: true; alpha: true">
+    <!-- 关键修改：使用 a-marker-camera 替代 a-marker -->
+    <a-marker-camera preset="hiro">
       <!-- 底部脉冲光圈 -->
-      <a-ring
-        color="#38bdf8"
-        radius-inner="0.28"
-        radius-outer="0.34"
-        rotation="-90 0 0"
-        position="0 0.01 0"
-        material="transparent: true; opacity: 0.75; side: double"
-        animation="property: scale; to: 1.25 1.25 1.25; dir: alternate; dur: 900; loop: true; easing: easeInOutSine"
-      ></a-ring>
-
-      <a-ring
-        color="#a78bfa"
-        radius-inner="0.18"
-        radius-outer="0.20"
-        rotation="-90 0 0"
-        position="0 0.02 0"
-        material="transparent: true; opacity: 0.5; side: double"
-      ></a-ring>
+      <a-ring color="#38bdf8" radius-inner="0.28" radius-outer="0.34" rotation="-90 0 0" position="0 0.01 0" material="transparent: true; opacity: 0.75; side: double" animation="property: scale; to: 1.25 1.25 1.25; dir: alternate; dur: 900; loop: true; easing: easeInOutSine"></a-ring>
+      <a-ring color="#a78bfa" radius-inner="0.18" radius-outer="0.20" rotation="-90 0 0" position="0 0.02 0" material="transparent: true; opacity: 0.5; side: double"></a-ring>
 
       <!-- 悬浮小星球 -->
-      <a-entity
-        position="0 0.45 0"
-        animation="property: position; to: 0 0.55 0; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine"
-      >
-        <a-sphere
-          id="planetSphere"
-          radius="0.16"
-          color="#0ea5e9"
-          material="metalness: 0.4; roughness: 0.2; emissive: #0284c7; emissiveIntensity: 0.35"
-        ></a-sphere>
+      <a-entity position="0 0.45 0" animation="property: position; to: 0 0.55 0; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine">
+        <a-sphere id="planetSphere" radius="0.16" color="#0ea5e9" material="metalness: 0.4; roughness: 0.2; emissive: #0284c7; emissiveIntensity: 0.35"></a-sphere>
 
         <!-- 两条旋转光环 -->
-        <a-torus
-          color="#fbbf24"
-          radius="0.24"
-          radius-tubular="0.012"
-          rotation="75 0 0"
-          material="emissive: #f59e0b; emissiveIntensity: 0.6"
-          animation="property: rotation; to: 75 360 0; dur: 6000; loop: true; easing: linear"
-        ></a-torus>
-
-        <a-torus
-          color="#f472b6"
-          radius="0.29"
-          radius-tubular="0.008"
-          rotation="105 30 0"
-          material="transparent: true; opacity: 0.85; emissive: #ec4899; emissiveIntensity: 0.5"
-          animation="property: rotation; to: 105 390 0; dur: 8000; loop: true; easing: linear"
-        ></a-torus>
+        <a-torus color="#fbbf24" radius="0.24" radius-tubular="0.012" rotation="75 0 0" material="emissive: #f59e0b; emissiveIntensity: 0.6" animation="property: rotation; to: 75 360 0; dur: 6000; loop: true; easing: linear"></a-torus>
+        <a-torus color="#f472b6" radius="0.29" radius-tubular="0.008" rotation="105 30 0" material="transparent: true; opacity: 0.85; emissive: #ec4899; emissiveIntensity: 0.5" animation="property: rotation; to: 105 390 0; dur: 8000; loop: true; easing: linear"></a-torus>
 
         <!-- 绕行小卫星 -->
         <a-entity animation="property: rotation; to: 0 360 0; dur: 5000; loop: true; easing: linear">
           <a-sphere radius="0.035" color="#fde68a" position="0.3 0 0"></a-sphere>
         </a-entity>
       </a-entity>
-    </a-marker>
+    </a-marker-camera>
 
     <a-entity camera></a-entity>
   </a-scene>
 
   <script>
+    // 显式请求摄像头权限（可选，但推荐在AR库初始化前执行）
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(function(stream) {
+          console.log('摄像头权限已获得');
+          // 停止这个临时的流，避免与AR.js冲突
+          stream.getTracks().forEach(track => track.stop());
+        })
+        .catch(function(err) {
+          console.error('无法获取摄像头权限:', err);
+        });
+    }
+
     const loading = document.getElementById('loading');
     const scene = document.querySelector('a-scene');
     const sphere = document.getElementById('planetSphere');
 
     scene.addEventListener('loaded', () => {
-      setTimeout(() => {
-        loading.style.display = 'none';
-      }, 800);
+      setTimeout(() => { loading.style.display = 'none'; }, 800);
     });
 
     const colors = ['#0ea5e9', '#22c55e', '#f97316', '#a855f7', '#ef4444'];
     let colorIndex = 0;
 
     window.addEventListener('pointerdown', (event) => {
-      // 点 HUD 里的链接时不换色
       if (event.target.closest('a')) return;
-
       colorIndex = (colorIndex + 1) % colors.length;
       sphere.setAttribute('color', colors[colorIndex]);
       sphere.setAttribute('material', 'emissive', colors[colorIndex]);
-
       sphere.setAttribute('scale', '1.25 1.25 1.25');
-      setTimeout(() => {
-        sphere.setAttribute('scale', '1 1 1');
-      }, 180);
+      setTimeout(() => { sphere.setAttribute('scale', '1 1 1'); }, 180);
     }, { passive: true });
   </script>
 </body>
