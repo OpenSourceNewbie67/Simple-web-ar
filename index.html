@@ -74,15 +74,32 @@
 
   <script>
     // 处理启动按钮逻辑
-    document.getElementById('start-btn').addEventListener('click', function() {
-      // 隐藏遮罩层
-      document.getElementById('start-screen').style.display = 'none';
-      
-      // 强制 A-Frame 重新调整大小，以适配全屏摄像头
-      setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-      }, 500);
-    });
+document.getElementById('start-btn').addEventListener('click', function() {
+  // 1. 隐藏遮罩层
+  document.getElementById('start-screen').style.display = 'none';
+  
+  // 2. 强制请求摄像头权限
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }) // 请求后置摄像头
+      .then(function(stream) {
+        console.log('摄像头权限已获得');
+        
+        // 【关键】必须立刻关掉这个测试用的视频流，把摄像头释放给 AR.js 使用
+        stream.getTracks().forEach(track => track.stop());
+        
+        // 给 AR.js 一点时间接手，强制触发窗口大小调整以适配全屏
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 500);
+      })
+      .catch(function(err) {
+        console.error('无法获取摄像头权限:', err);
+        alert('获取摄像头失败: ' + err.name + '\n请检查浏览器权限设置，建议换用 Chrome 或 Firefox。');
+      });
+  } else {
+    alert('您的浏览器不支持调用摄像头，请换用 Chrome 或 Firefox。');
+  }
+});
 
     // 点击屏幕给星球换颜色
     const sphere = document.getElementById('planetSphere');
