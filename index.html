@@ -3,45 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Hiro AR 小星球</title>
+  <title>AR 诊断版</title>
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
     #hud { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 10; padding: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: 14px; border-radius: 8px;}
   </style>
 
-  <!-- 使用公认最稳定的版本组合 -->
+  <!-- 添加错误捕获，直接把报错显示在屏幕上 -->
+  <script>
+    window.onerror = function(msg, url, line) {
+      var errDiv = document.createElement('div');
+      errDiv.style.cssText = 'position:fixed; top:0; left:0; right:0; background:red; color:white; z-index:9999; font-size:12px; padding:10px; word-break:break-all;';
+      errDiv.innerHTML = '<b>报错啦：</b><br>' + msg + '<br>位置: ' + url + ':' + line;
+      document.body.appendChild(errDiv);
+    };
+  </script>
+
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ar.js@3.3.2/aframe/build/aframe-ar.js"></script>
+  <!-- 使用国内相对稳定的 unpkg 源 -->
+  <script src="https://unpkg.com/ar.js@3.3.2/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
   <div id="hud">
-    把摄像头对准 <b>Hiro 标记</b>，出现红色方块后点屏幕可换颜色。
+    诊断模式：如果页面全黑，请留意屏幕最顶部是否有红色报错信息。
   </div>
 
-  <!-- 移除 embedded，确保全屏；vr-mode-ui 强制关闭 -->
   <a-scene 
     vr-mode-ui="enabled: false" 
-    renderer="logarithmicDepthBuffer: true; precision: mediump;"
-    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    arjs="sourceType: webcam; debugUIEnabled: false;"
   >
     <a-marker preset="hiro">
-      <!-- 先放一个最基础的方块，测试能否识别 -->
-      <a-box id="testBox" position="0 0.5 0" rotation="0 45 45" scale="0.5 0.5 0.5" color="#EF2D5E"></a-box>
+      <a-box position="0 0.5 0" rotation="0 45 45" scale="0.5 0.5 0.5" color="#EF2D5E"></a-box>
     </a-marker>
     
-    <!-- 必须有摄像头实体 -->
     <a-entity camera></a-entity>
   </a-scene>
-
-  <script>
-    // 添加换色小功能
-    const box = document.getElementById('testBox');
-    const colors = ['#EF2D5E', '#22c55e', '#f97316', '#a855f7', '#0ea5e9'];
-    let colorIndex = 0;
-    window.addEventListener('pointerdown', () => {
-      colorIndex = (colorIndex + 1) % colors.length;
-      box.setAttribute('color', colors[colorIndex]);
-    });
-  </script>
 </body>
 </html>
