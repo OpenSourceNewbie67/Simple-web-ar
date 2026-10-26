@@ -3,11 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>AR 扫码小星球</title>
+  <title>AR 扫码小星球 (原生流版)</title>
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui; }
     
-    /* 启动按钮层：用于触发摄像头权限 */
+    /* 1. 原生视频流作为全屏底层背景 */
+    #ar-video {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      object-fit: cover; /* 铺满屏幕不变形 */
+      z-index: 0;
+    }
+
+    /* 2. A-Frame 画布浮在视频上方，且背景透明 */
+    a-scene {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 1;
+      background: transparent !important; 
+    }
+
+    /* 启动按钮层 */
     #start-screen {
       position: fixed; inset: 0; z-index: 1000;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -19,34 +37,43 @@
       box-shadow: 0 4px 15px rgba(14, 165, 233, 0.5);
       margin-top: 20px;
     }
-    #start-btn:active { transform: scale(0.95); }
-    .hint { color: #aaa; font-size: 14px; margin-top: 15px; line-height: 1.5; }
+    
+    /* 底部提示 */
+    #hud {
+      position: fixed; bottom: 10px; left: 10px; right: 10px; 
+      color: #fff; background: rgba(0,0,0,0.6); padding: 10px; 
+      border-radius: 8px; font-size: 14px; z-index: 10; text-align: center;
+      pointer-events: none; /* 防止挡住点击换色事件 */
+    }
   </style>
 
-  <!-- 引入最稳定的版本组合 -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- 引入 AR.js -->
   <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.5/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
   
+  <!-- 底层视频标签 -->
+  <video id="ar-video" autoplay playsinline muted></video>
+
   <!-- 启动遮罩层 -->
   <div id="start-screen">
     <h2>AR 小星球</h2>
-    <div class="hint">点击下方按钮启动摄像头<br>然后把镜头对准 <b>0 号 AR 二维码</b></div>
+    <div style="color:#aaa; font-size:14px; margin-top:15px; line-height:1.5;">点击启动，对准 <b>0 号 AR 二维码</b></div>
     <button id="start-btn">启动摄像头</button>
   </div>
 
-  <div id="hud" style="position:fixed; bottom:10px; left:10px; right:10px; color:#fff; background:rgba(0,0,0,0.6); padding:10px; border-radius:8px; font-size:14px; z-index:10; text-align:center;">
-    对准二维码后，小星球会悬浮在二维码上方，点屏幕可换色。
+  <div id="hud">
+    对准二维码，小星球会悬浮在上方，点屏幕可换色。
   </div>
 
-  <!-- AR 场景 -->
+  <!-- AR 场景：注意 arjs 的配置改成了 sourceType: video -->
   <a-scene 
+    embedded
     vr-mode-ui="enabled: false" 
-    renderer="logarithmicDepthBuffer: true; precision: mediump;"
-    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    renderer="logarithmicDepthBuffer: true; precision: mediump; alpha: true"
+    arjs="sourceType: video; sourceUrl: #ar-video; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
   >
-    <!-- 识别 0 号 Barcode 二维码 -->
     <a-marker type="barcode" value="0">
       
       <!-- 小星球组合体 -->
@@ -68,52 +95,47 @@
       
     </a-marker>
 
-    <!-- 必须有摄像头实体 -->
     <a-entity camera></a-entity>
   </a-scene>
 
   <script>
-    // 处理启动按钮逻辑
-document.getElementById('start-btn').addEventListener('click', function() {
-  // 1. 隐藏遮罩层
-  document.getElementById('start-screen').style.display = 'none';
-  
-  // 2. 强制请求摄像头权限
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }) // 请求后置摄像头
-      .then(function(stream) {
-        console.log('摄像头权限已获得');
-        
-        // 【关键】必须立刻关掉这个测试用的视频流，把摄像头释放给 AR.js 使用
-        stream.getTracks().forEach(track => track.stop());
-        
-        // 给 AR.js 一点时间接手，强制触发窗口大小调整以适配全屏
-        setTimeout(() => {
-          window.dispatchEvent(new Event('resize'));
-        }, 500);
-      })
-      .catch(function(err) {
-        console.error('无法获取摄像头权限:', err);
-        alert('获取摄像头失败: ' + err.name + '\n请检查浏览器权限设置，建议换用 Chrome 或 Firefox。');
-      });
-  } else {
-    alert('您的浏览器不支持调用摄像头，请换用 Chrome 或 Firefox。');
-  }
-});
+    // 1. 点击按钮启动原生摄像头（你最信任的逻辑）
+    document.getElementById('start-btn').addEventListener('click', function() {
+      const video = document.getElementById('ar-video');
+      
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(function(stream) {
+          // 将视频流绑定到我们的底层 video 标签
+          video.srcObject = stream;
+          // 强制播放
+          video.play();
+          
+          // 隐藏启动层
+          document.getElementById('start-screen').style.display = 'none';
+          
+          // 通知 A-Frame 重新调整大小，触发 AR.js 读取视频帧
+          setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+          }, 500);
+        })
+        .catch(function(err) {
+          console.error('无法获取摄像头权限:', err);
+          alert('获取摄像头失败，请检查权限或更换浏览器。');
+        });
+    });
 
-    // 点击屏幕给星球换颜色
+    // 2. 点击屏幕换色功能
     const sphere = document.getElementById('planetSphere');
     const colors = ['#0ea5e9', '#22c55e', '#f97316', '#a855f7', '#ef4444'];
     let colorIndex = 0;
 
     window.addEventListener('pointerdown', (event) => {
-      if (event.target.tagName === 'BUTTON') return; // 忽略按钮的点击
+      if (event.target.tagName === 'BUTTON') return;
       
       colorIndex = (colorIndex + 1) % colors.length;
       sphere.setAttribute('color', colors[colorIndex]);
       sphere.setAttribute('material', 'emissive', colors[colorIndex]);
       
-      // 缩放反馈
       sphere.setAttribute('scale', '1.2 1.2 1.2');
       setTimeout(() => { sphere.setAttribute('scale', '1 1 1'); }, 150);
     });
