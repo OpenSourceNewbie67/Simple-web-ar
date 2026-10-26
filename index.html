@@ -3,40 +3,103 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>AR 诊断版</title>
+  <title>AR 扫码小星球</title>
   <style>
-    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
-    #hud { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 10; padding: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: 14px; border-radius: 8px;}
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui; }
+    
+    /* 启动按钮层：用于触发摄像头权限 */
+    #start-screen {
+      position: fixed; inset: 0; z-index: 1000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #111; color: #fff; padding: 20px; text-align: center;
+    }
+    #start-btn {
+      padding: 15px 40px; font-size: 18px; font-weight: bold;
+      background: #0ea5e9; color: #fff; border: none; border-radius: 30px;
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.5);
+      margin-top: 20px;
+    }
+    #start-btn:active { transform: scale(0.95); }
+    .hint { color: #aaa; font-size: 14px; margin-top: 15px; line-height: 1.5; }
   </style>
 
-  <!-- 添加错误捕获，直接把报错显示在屏幕上 -->
-  <script>
-    window.onerror = function(msg, url, line) {
-      var errDiv = document.createElement('div');
-      errDiv.style.cssText = 'position:fixed; top:0; left:0; right:0; background:red; color:white; z-index:9999; font-size:12px; padding:10px; word-break:break-all;';
-      errDiv.innerHTML = '<b>报错啦：</b><br>' + msg + '<br>位置: ' + url + ':' + line;
-      document.body.appendChild(errDiv);
-    };
-  </script>
-
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <!-- 使用国内相对稳定的 unpkg 源 -->
-  <script src="https://unpkg.com/ar.js@3.3.2/aframe/build/aframe-ar.js"></script>
+  <!-- 引入最稳定的版本组合 -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.5/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
-  <div id="hud">
-    诊断模式：如果页面全黑，请留意屏幕最顶部是否有红色报错信息。
+  
+  <!-- 启动遮罩层 -->
+  <div id="start-screen">
+    <h2>AR 小星球</h2>
+    <div class="hint">点击下方按钮启动摄像头<br>然后把镜头对准 <b>0 号 AR 二维码</b></div>
+    <button id="start-btn">启动摄像头</button>
   </div>
 
+  <div id="hud" style="position:fixed; bottom:10px; left:10px; right:10px; color:#fff; background:rgba(0,0,0,0.6); padding:10px; border-radius:8px; font-size:14px; z-index:10; text-align:center;">
+    对准二维码后，小星球会悬浮在二维码上方，点屏幕可换色。
+  </div>
+
+  <!-- AR 场景 -->
   <a-scene 
     vr-mode-ui="enabled: false" 
-    arjs="sourceType: webcam; debugUIEnabled: false;"
+    renderer="logarithmicDepthBuffer: true; precision: mediump;"
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
   >
-    <a-marker preset="hiro">
-      <a-box position="0 0.5 0" rotation="0 45 45" scale="0.5 0.5 0.5" color="#EF2D5E"></a-box>
+    <!-- 识别 0 号 Barcode 二维码 -->
+    <a-marker type="barcode" value="0">
+      
+      <!-- 小星球组合体 -->
+      <a-entity position="0 0.4 0" animation="property: position; to: 0 0.5 0; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine">
+        <!-- 星球本体 -->
+        <a-sphere id="planetSphere" radius="0.15" color="#0ea5e9" material="metalness: 0.4; roughness: 0.2; emissive: #0284c7; emissiveIntensity: 0.5"></a-sphere>
+
+        <!-- 旋转光环 1 -->
+        <a-torus color="#fbbf24" radius="0.22" radius-tubular="0.01" rotation="75 0 0" material="emissive: #f59e0b; emissiveIntensity: 0.6" animation="property: rotation; to: 75 360 0; dur: 4000; loop: true; easing: linear"></a-torus>
+
+        <!-- 旋转光环 2 -->
+        <a-torus color="#f472b6" radius="0.28" radius-tubular="0.008" rotation="105 30 0" material="transparent: true; opacity: 0.85; emissive: #ec4899; emissiveIntensity: 0.5" animation="property: rotation; to: 105 390 0; dur: 6000; loop: true; easing: linear"></a-torus>
+
+        <!-- 绕行卫星 -->
+        <a-entity animation="property: rotation; to: 0 360 0; dur: 3000; loop: true; easing: linear">
+          <a-sphere radius="0.03" color="#fde68a" position="0.3 0 0"></a-sphere>
+        </a-entity>
+      </a-entity>
+      
     </a-marker>
-    
+
+    <!-- 必须有摄像头实体 -->
     <a-entity camera></a-entity>
   </a-scene>
+
+  <script>
+    // 处理启动按钮逻辑
+    document.getElementById('start-btn').addEventListener('click', function() {
+      // 隐藏遮罩层
+      document.getElementById('start-screen').style.display = 'none';
+      
+      // 强制 A-Frame 重新调整大小，以适配全屏摄像头
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 500);
+    });
+
+    // 点击屏幕给星球换颜色
+    const sphere = document.getElementById('planetSphere');
+    const colors = ['#0ea5e9', '#22c55e', '#f97316', '#a855f7', '#ef4444'];
+    let colorIndex = 0;
+
+    window.addEventListener('pointerdown', (event) => {
+      if (event.target.tagName === 'BUTTON') return; // 忽略按钮的点击
+      
+      colorIndex = (colorIndex + 1) % colors.length;
+      sphere.setAttribute('color', colors[colorIndex]);
+      sphere.setAttribute('material', 'emissive', colors[colorIndex]);
+      
+      // 缩放反馈
+      sphere.setAttribute('scale', '1.2 1.2 1.2');
+      setTimeout(() => { sphere.setAttribute('scale', '1 1 1'); }, 150);
+    });
+  </script>
 </body>
 </html>
